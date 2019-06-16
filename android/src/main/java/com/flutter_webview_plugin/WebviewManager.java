@@ -15,6 +15,8 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.webkit.JavascriptInterface;
 import android.widget.FrameLayout;
 import android.provider.MediaStore;
 import androidx.core.content.FileProvider;
@@ -244,6 +246,7 @@ class WebviewManager {
                 FlutterWebviewPlugin.channel.invokeMethod("onProgressChanged", args);
             }
         });
+        webView.addJavascriptInterface(new WebAppInterface(), "Android");
     }
 
     private Uri getOutputFilename(String intentType) {
@@ -493,6 +496,14 @@ class WebviewManager {
     void stopLoading(MethodCall call, MethodChannel.Result result){
         if (webView != null){
             webView.stopLoading();
+        }
+    }
+    public class WebAppInterface {
+        @JavascriptInterface
+        public void getPostMessage(String value){
+            Map<String, Object> postMessageMap = new HashMap<>();
+            postMessageMap.put("postMessage", value);
+            FlutterWebviewPlugin.channel.invokeMethod("onPostMessage", postMessageMap);
         }
     }
 }

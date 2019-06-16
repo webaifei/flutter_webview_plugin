@@ -7,7 +7,7 @@ import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
 const kAndroidUserAgent =
     'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Mobile Safari/537.36';
 
-String selectedUrl = 'https://flutter.io';
+String selectedUrl = 'https://webaifei.github.io/loan-remote/';
 
 void main() => runApp(MyApp());
 
@@ -23,9 +23,9 @@ class MyApp extends StatelessWidget {
       ),
       routes: {
         '/': (_) => const MyHomePage(title: 'Flutter WebView Demo'),
-        '/widget': (_) {
+        '/home': (_) {
           return WebviewScaffold(
-            url: selectedUrl,
+            url: 'https://webaifei.github.io/loan-remote/list.html',
             appBar: AppBar(
               title: const Text('Widget WebView'),
             ),
@@ -93,8 +93,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   StreamSubscription<WebViewHttpError> _onHttpError;
 
-  StreamSubscription<double> _onProgressChanged;
-
   StreamSubscription<double> _onScrollYChanged;
 
   StreamSubscription<double> _onScrollXChanged;
@@ -106,7 +104,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final _history = [];
-
+  String message;
   @override
   void initState() {
     super.initState();
@@ -134,14 +132,6 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     });
 
-    _onProgressChanged = flutterWebViewPlugin.onProgressChanged.listen((double progress) {
-      if (mounted) {
-        setState(() {
-          _history.add("onProgressChanged: $progress");
-        });
-      }
-    });
-    
     _onScrollYChanged = flutterWebViewPlugin.onScrollYChanged.listen((double y) {
       if (mounted) {
         setState(() {
@@ -173,6 +163,11 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
     });
+
+    flutterWebViewPlugin.onPostMessage.listen((String message){
+      print(message);
+      Navigator.of(context).pushNamed("/home");
+    });
   }
 
   @override
@@ -182,7 +177,6 @@ class _MyHomePageState extends State<MyHomePage> {
     _onUrlChanged.cancel();
     _onStateChanged.cancel();
     _onHttpError.cancel();
-    _onProgressChanged.cancel();
     _onScrollXChanged.cancel();
     _onScrollYChanged.cancel();
 
@@ -193,86 +187,44 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
+    return WebviewScaffold(
+      url: selectedUrl,
       appBar: AppBar(
-        title: const Text('Plugin example app'),
+        title: const Text('Widget WebView'),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24.0),
-              child: TextField(controller: _urlCtrl),
-            ),
-            RaisedButton(
+      withZoom: true,
+      withLocalStorage: true,
+      hidden: true,
+      initialChild: Container(
+        color: Colors.redAccent,
+        child: const Center(
+          child: Text('Waiting.....'),
+        ),
+      ),
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          children: <Widget>[
+            IconButton(
+              icon: const Icon(Icons.arrow_back_ios),
               onPressed: () {
-                flutterWebViewPlugin.launch(
-                  selectedUrl,
-                  rect: Rect.fromLTWH(0.0, 0.0, MediaQuery.of(context).size.width, 300.0),
-                  userAgent: kAndroidUserAgent,
-                  invalidUrlRegex: r'^(https).+(twitter)', // prevent redirecting to twitter when user click on its icon in flutter website
-                );
+                flutterWebViewPlugin.goBack();
               },
-              child: const Text('Open Webview (rect)'),
             ),
-            RaisedButton(
+            IconButton(
+              icon: const Icon(Icons.arrow_forward_ios),
               onPressed: () {
-                flutterWebViewPlugin.launch(selectedUrl, hidden: true);
+                flutterWebViewPlugin.goForward();
               },
-              child: const Text('Open "hidden" Webview'),
             ),
-            RaisedButton(
+            IconButton(
+              icon: const Icon(Icons.autorenew),
               onPressed: () {
-                flutterWebViewPlugin.launch(selectedUrl);
+                flutterWebViewPlugin.reload();
               },
-              child: const Text('Open Fullscreen Webview'),
             ),
-            RaisedButton(
-              onPressed: () {
-                Navigator.of(context).pushNamed('/widget');
-              },
-              child: const Text('Open widget webview'),
-            ),
-            Container(
-              padding: const EdgeInsets.all(24.0),
-              child: TextField(controller: _codeCtrl),
-            ),
-            RaisedButton(
-              onPressed: () {
-                final future = flutterWebViewPlugin.evalJavascript(_codeCtrl.text);
-                future.then((String result) {
-                  setState(() {
-                    _history.add('eval: $result');
-                  });
-                });
-              },
-              child: const Text('Eval some javascript'),
-            ),
-            RaisedButton(
-              onPressed: () {
-                setState(() {
-                  _history.clear();
-                });
-                flutterWebViewPlugin.close();
-              },
-              child: const Text('Close'),
-            ),
-            RaisedButton(
-              onPressed: () {
-                flutterWebViewPlugin.getCookies().then((m) {
-                  setState(() {
-                    _history.add('cookies: $m');
-                  });
-                });
-              },
-              child: const Text('Cookies'),
-            ),
-            Text(_history.join('\n'))
           ],
         ),
       ),
-    );
+    );;
   }
 }
